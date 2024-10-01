@@ -1,5 +1,3 @@
-// import { GameView } from './GameView.js';
-// import { Game } from './Game.js';
 const GameBoard = (function () {
     let gameBoard = [];
     const resetBoard = function () {
@@ -13,7 +11,11 @@ const GameBoard = (function () {
     };
 
     const setCellMark = function (x, y, player) {
+        if(gameBoard[x][y] === 'X' || gameBoard[x][y] === 'O'){
+            return false;
+        }
         gameBoard[x][y] = player.mark;
+        return true;
     };
 
     const getBoardCopy = function () {
@@ -29,7 +31,7 @@ const GameBoard = (function () {
 })();
 
 const Game = (function (gameBoard) {
-    let players = [
+    const players = [
         {
             name: 'Player1',
             mark: 'O'
@@ -41,7 +43,7 @@ const Game = (function (gameBoard) {
     ];
     let activePlayer = players[0];
 
-    let gameStatus = { winnerExist: false, isToe: false, winner: null };
+    const gameStatus = { winnerExist: false, isToe: false, winner: null };
 
     const setGameStatus = function (winnerExist = false, isToe = false, winner = null) {
         gameStatus.isToe = isToe;
@@ -55,6 +57,10 @@ const Game = (function (gameBoard) {
 
     const getGameBoard = function () {
         return gameBoard;
+    }
+
+    const getPlayers = function () {
+        return players;
     }
 
     const getActivePlayer = function () {
@@ -124,7 +130,8 @@ const Game = (function (gameBoard) {
         switchPlayerTurn,
         getGameStatus,
         getActivePlayer,
-        getGameBoard
+        getGameBoard,
+        getPlayers
     };
 
 })(GameBoard);
@@ -146,6 +153,12 @@ const GameController = (function (game, gameView) {
     const playGame = function () {
         console.log('Game begins!');
         alert('Game begins!');
+
+        let player1Name = prompt('Enter player 1 name');
+        let player2Name = prompt('Enter player 2 name');
+
+        game.getPlayers()[0].name = player1Name;
+        game.getPlayers()[1].name = player2Name;
 
         let gameStatus = game.getGameStatus();
 
@@ -171,12 +184,18 @@ const GameController = (function (game, gameView) {
         alert('It is ' + game.getActivePlayer().name + ' turn!');
         alert(getBoardStr(game.getGameBoard().getBoardCopy()));
 
-        let playersChoice = prompt('Enter cell x:y coordinates!');
-        playersChoice = {
-            x: Number.parseInt(playersChoice.at(0)),
-            y: Number.parseInt(playersChoice.at(2))
-        };
-        game.getGameBoard().setCellMark(playersChoice.x, playersChoice.y, game.getActivePlayer());
+        let isSet = null;
+        while (! isSet) {
+            let playersChoice = prompt('Enter cell x:y coordinates!');
+            playersChoice = {
+                x: Number.parseInt(playersChoice.at(0)),
+                y: Number.parseInt(playersChoice.at(2))
+            };
+            isSet = game.getGameBoard().setCellMark(playersChoice.x, playersChoice.y, game.getActivePlayer());
+            if(! isSet){
+                alert('This cell already set!');
+            }
+        }
         game.checkWinnerExistence();
         game.switchPlayerTurn();
         return game.getGameStatus()
