@@ -11,21 +11,22 @@ const GameBoard = (function () {
     };
 
     const setCellMark = function (x, y, player) {
-        if(gameBoard[x][y] === 'X' || gameBoard[x][y] === 'O'){
+        if (gameBoard[x][y] === 'X' || gameBoard[x][y] === 'O') {
             return false;
         }
         gameBoard[x][y] = player.mark;
         return true;
     };
 
-    const getBoardCopy = function () {
-        return JSON.parse(JSON.stringify(gameBoard));
+    const getBoard = function () {
+        //return JSON.parse(JSON.stringify(gameBoard));
+        return gameBoard;
     };
 
     return {
         getCellMark,
         setCellMark,
-        getBoardCopy,
+        getBoard,
         resetBoard
     };
 })();
@@ -55,7 +56,7 @@ const Game = (function (gameBoard) {
         return gameStatus;
     }
 
-    const getGameBoard = function () {
+    const getGameBoardObj = function () {
         return gameBoard;
     }
 
@@ -72,7 +73,7 @@ const Game = (function (gameBoard) {
     }
 
     const checkWinnerExistence = function () {
-        const board = gameBoard.getBoardCopy();
+        const board = gameBoard.getBoard();
         let winnerMark = null;
         let fullyFilledBoard = false;
 
@@ -130,17 +131,62 @@ const Game = (function (gameBoard) {
         switchPlayerTurn,
         getGameStatus,
         getActivePlayer,
-        getGameBoard,
+        getGameBoardObj,
         getPlayers
     };
 
 })(GameBoard);
 
 const GameView = (function () {
-    
+    const msgBoard = document.querySelector('.msg-board > p');
+    const domCells = document.querySelectorAll('.cell');
+
+    function idToCoord(id) {
+        return id.split(':').map(Number)
+    }
+
+    const renderBoardValues = function (gameBoard) {
+        for (const cell of domCells) {
+            let [x, y] = idToCoord(cell.id);
+            if (gameBoard[x][y] === null) {
+                cell.textContent = '';
+            } else {
+                cell.textContent = gameBoard[x][y];
+            }
+        }
+    }
+
+    function disableCells() {
+        domCells.forEach((cell)=> cell.classList.add('blocked'));
+    }
+
+    function enableleCells() {
+        domCells.forEach((cell)=> cell.classList.remove('blocked'));
+    }
+
+    function updateMessage(newMessage) {
+        msgBoard.textContent = newMessage;
+    }
+
+    function addListenersToCells(playRound) {
+        domCells.forEach(
+            (cell) => cell.addEventListener('click', (e) => {
+                playRound(idToCoord(e.target.id))
+            })
+        )
+    }
+
+    return {
+        renderBoardValues,
+        updateMessage,
+        addListenersToCells,
+        disableCells,
+        enableleCells
+    };
 })();
 
 const GameController = (function (game, gameView) {
+
     function getBoardStr(board) {
         let boardString = '';
         for (let row of board) {
@@ -150,58 +196,89 @@ const GameController = (function (game, gameView) {
 
         return boardString;
     }
+
     const playGame = function () {
-        console.log('Game begins!');
-        alert('Game begins!');
 
-        let player1Name = prompt('Enter player 1 name');
-        let player2Name = prompt('Enter player 2 name');
+        gameView.addListenersToCells(playRound);
 
-        game.getPlayers()[0].name = player1Name;
-        game.getPlayers()[1].name = player2Name;
+        gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
 
-        let gameStatus = game.getGameStatus();
+        // console.log('Game begins!');
+        // alert('Game begins!');
 
-        while (!gameStatus.winner && !gameStatus.isToe) {
-            gameStatus = playRound();
-        }
+        // let player1Name = prompt('Enter player 1 name');
+        // let player2Name = prompt('Enter player 2 name');
 
-        if (gameStatus.winnerExist) {
-            console.log('Winner is ' + gameStatus.winner.name);
-            alert('Winner is ' + gameStatus.winner.name);
-            alert(getBoardStr(game.getGameBoard().getBoardCopy()));
-        } else if (gameStatus.isToe) {
-            console.log('It is Toe!');
-            alert('It is Toe!');
-            alert(getBoardStr(game.getGameBoard().getBoardCopy()));
-        }
+        // game.getPlayers()[0].name = player1Name;
+        // game.getPlayers()[1].name = player2Name;
+
+        // let gameStatus = game.getGameStatus();
+
+        // while (!gameStatus.winner && !gameStatus.isToe) {
+        //     gameStatus = playRound();
+        // }
+
+        // if (gameStatus.winnerExist) {
+        //     console.log('Winner is ' + gameStatus.winner.name);
+        //     alert('Winner is ' + gameStatus.winner.name);
+        //     alert(getBoardStr(game.getGameBoardObj().getBoard()));
+        // } else if (gameStatus.isToe) {
+        //     console.log('It is Toe!');
+        //     alert('It is Toe!');
+        //     alert(getBoardStr(game.getGameBoardObj().getBoard()));
+        // }
     }
 
-    const playRound = function () {
-        console.log('It is ' + game.getActivePlayer().name + ' turn!');
-        console.log(game.getGameBoard().getBoardCopy());
+    const playRound = function (cellCoord) {
+        let [x, y] = cellCoord;
 
-        alert('It is ' + game.getActivePlayer().name + ' turn!');
-        alert(getBoardStr(game.getGameBoard().getBoardCopy()));
-
-        let isSet = null;
-        while (! isSet) {
-            let playersChoice = prompt('Enter cell x:y coordinates!');
-            playersChoice = {
-                x: Number.parseInt(playersChoice.at(0)),
-                y: Number.parseInt(playersChoice.at(2))
-            };
-            isSet = game.getGameBoard().setCellMark(playersChoice.x, playersChoice.y, game.getActivePlayer());
-            if(! isSet){
-                alert('This cell already set!');
+        let isSet = game.getGameBoardObj().setCellMark(x, y, game.getActivePlayer());
+        if (!isSet) {
+            gameView.updateMessage('Cell is not empty.')
+        } else {
+            gameView.renderBoardValues(game.getGameBoardObj().getBoard());
+            game.checkWinnerExistence();
+            
+            let gameStatus = game.getGameStatus();
+            if (gameStatus.winnerExist) {
+                gameView.updateMessage('Winner is ' + gameStatus.winner.name);
+                gameView.disableCells();
+            } else if (gameStatus.isToe) {
+                gameView.updateMessage('It is Toe!');
+                gameView.disableCells();
+            }else{
+                game.switchPlayerTurn();
+                gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
             }
         }
-        game.checkWinnerExistence();
-        game.switchPlayerTurn();
-        return game.getGameStatus()
+
+
+        // console.log('It is ' + game.getActivePlayer().name + ' turn!');
+        // console.log(game.getGameBoardObj().getBoard());
+
+        // alert('It is ' + game.getActivePlayer().name + ' turn!');
+        // alert(getBoardStr(game.getGameBoardObj().getBoard()));
+
+        // let isSet = null;
+        // while (!isSet) {
+        //     let playersChoice = prompt('Enter cell x:y coordinates!');
+        //     playersChoice = {
+        //         x: Number.parseInt(playersChoice.at(0)),
+        //         y: Number.parseInt(playersChoice.at(2))
+        //     };
+        //     isSet = game.getGameBoardObj().setCellMark(playersChoice.x, playersChoice.y, game.getActivePlayer());
+        //     if (!isSet) {
+        //         alert('This cell already set!');
+        //     }
+        // }
+        // game.checkWinnerExistence();
+        // game.switchPlayerTurn();
+        // return game.getGameStatus()
     }
 
     return { playGame };
 })(Game, GameView);
 
 GameController.playGame();
+
+//GameView.renderBoardValues(Game.getGameBoardObj().getBoard());

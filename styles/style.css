@@ -1,2 +1,32 @@
 @import url(reset.css);
 
+.game-board {
+    margin: 50px auto;
+    background-color: darkgrey;
+    border: 1px solid black;
+    width: fit-content;
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+}
+
+.msg-board{
+    margin: 50px auto;
+    background-color: darkgrey;
+    border: 1px solid black;
+    width: 300px;
+    height: 100px;
+    font-size: 20px;
+    padding: 10px;
+}
+
+.cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid black;
+}
+
+.blocked{
+    pointer-events: none;
+}
