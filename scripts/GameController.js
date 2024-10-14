@@ -46,6 +46,11 @@ const Game = (function (gameBoard) {
 
     const gameStatus = { winnerExist: false, isToe: false, winner: null };
 
+    const resetModel = function () {
+        gameBoard.resetBoard();
+        activePlayer = players[0];
+    }
+
     const setGameStatus = function (winnerExist = false, isToe = false, winner = null) {
         gameStatus.isToe = isToe;
         gameStatus.winnerExist = winnerExist;
@@ -132,7 +137,8 @@ const Game = (function (gameBoard) {
         getGameStatus,
         getActivePlayer,
         getGameBoardObj,
-        getPlayers
+        getPlayers,
+        resetModel,
     };
 
 })(GameBoard);
@@ -140,6 +146,9 @@ const Game = (function (gameBoard) {
 const GameView = (function () {
     const msgBoard = document.querySelector('.msg-board > p');
     const domCells = document.querySelectorAll('.cell');
+    const gameBtn = document.querySelector('.game-btn');
+
+    disableCells();
 
     function idToCoord(id) {
         return id.split(':').map(Number)
@@ -154,6 +163,14 @@ const GameView = (function () {
                 cell.textContent = gameBoard[x][y];
             }
         }
+    }
+
+    function disableGameBtn() {
+        gameBtn.setAttribute('disabled','');
+    }
+
+    function enableGameBtn() {
+        gameBtn.removeAttribute('disabled');
     }
 
     function disableCells() {
@@ -171,9 +188,21 @@ const GameView = (function () {
     function addListenersToCells(playRound) {
         domCells.forEach(
             (cell) => cell.addEventListener('click', (e) => {
-                playRound(idToCoord(e.target.id))
+                playRound(idToCoord(e.target.id));
             })
         )
+    }
+
+    function updateBtn() {
+        if(gameBtn.textContent === 'Start game'){
+            gameBtn.textContent = 'Reset game';
+        }
+    }
+
+    function addListenersToGameBtn(startGame) {
+        gameBtn.addEventListener('click', () => {
+                startGame();
+            })
     }
 
     return {
@@ -181,54 +210,25 @@ const GameView = (function () {
         updateMessage,
         addListenersToCells,
         disableCells,
-        enableleCells
+        enableleCells,
+        addListenersToGameBtn,
+        updateBtn,
+        disableGameBtn,
+        enableGameBtn,
     };
 })();
 
 const GameController = (function (game, gameView) {
-
-    function getBoardStr(board) {
-        let boardString = '';
-        for (let row of board) {
-            let boardRow = row.map(cell => cell === null ? '.' : cell).join('   ');
-            boardString += boardRow + '\n';
-        }
-
-        return boardString;
-    }
-
-    const playGame = function () {
-
-        gameView.addListenersToCells(playRound);
-
+    
+    const startGame = function () {
+        game.resetModel();
         gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
-
-        // console.log('Game begins!');
-        // alert('Game begins!');
-
-        // let player1Name = prompt('Enter player 1 name');
-        // let player2Name = prompt('Enter player 2 name');
-
-        // game.getPlayers()[0].name = player1Name;
-        // game.getPlayers()[1].name = player2Name;
-
-        // let gameStatus = game.getGameStatus();
-
-        // while (!gameStatus.winner && !gameStatus.isToe) {
-        //     gameStatus = playRound();
-        // }
-
-        // if (gameStatus.winnerExist) {
-        //     console.log('Winner is ' + gameStatus.winner.name);
-        //     alert('Winner is ' + gameStatus.winner.name);
-        //     alert(getBoardStr(game.getGameBoardObj().getBoard()));
-        // } else if (gameStatus.isToe) {
-        //     console.log('It is Toe!');
-        //     alert('It is Toe!');
-        //     alert(getBoardStr(game.getGameBoardObj().getBoard()));
-        // }
+        gameView.renderBoardValues(game.getGameBoardObj().getBoard());
+        gameView.enableleCells();
+        gameView.disableGameBtn();
     }
 
+    
     const playRound = function (cellCoord) {
         let [x, y] = cellCoord;
 
@@ -240,45 +240,24 @@ const GameController = (function (game, gameView) {
             game.checkWinnerExistence();
             
             let gameStatus = game.getGameStatus();
+            if(gameStatus.winnerExist || gameStatus.isToe){
+                gameView.disableCells();
+                gameView.updateBtn();
+                gameView.enableGameBtn();
+            }
             if (gameStatus.winnerExist) {
                 gameView.updateMessage('Winner is ' + gameStatus.winner.name);
-                gameView.disableCells();
+                
             } else if (gameStatus.isToe) {
                 gameView.updateMessage('It is Toe!');
-                gameView.disableCells();
             }else{
                 game.switchPlayerTurn();
                 gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
             }
         }
-
-
-        // console.log('It is ' + game.getActivePlayer().name + ' turn!');
-        // console.log(game.getGameBoardObj().getBoard());
-
-        // alert('It is ' + game.getActivePlayer().name + ' turn!');
-        // alert(getBoardStr(game.getGameBoardObj().getBoard()));
-
-        // let isSet = null;
-        // while (!isSet) {
-        //     let playersChoice = prompt('Enter cell x:y coordinates!');
-        //     playersChoice = {
-        //         x: Number.parseInt(playersChoice.at(0)),
-        //         y: Number.parseInt(playersChoice.at(2))
-        //     };
-        //     isSet = game.getGameBoardObj().setCellMark(playersChoice.x, playersChoice.y, game.getActivePlayer());
-        //     if (!isSet) {
-        //         alert('This cell already set!');
-        //     }
-        // }
-        // game.checkWinnerExistence();
-        // game.switchPlayerTurn();
-        // return game.getGameStatus()
     }
 
-    return { playGame };
+    gameView.addListenersToGameBtn(startGame);
+    gameView.addListenersToCells(playRound);
+
 })(Game, GameView);
-
-GameController.playGame();
-
-//GameView.renderBoardValues(Game.getGameBoardObj().getBoard());

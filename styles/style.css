@@ -1,7 +1,7 @@
 @import url(reset.css);
 
 .game-board {
-    margin: 50px auto;
+    margin: 0 auto;
     background-color: darkgrey;
     border: 1px solid black;
     width: fit-content;
@@ -9,9 +9,13 @@
     grid-template-columns: repeat(3, 100px);
     grid-template-rows: repeat(3, 100px);
 }
-
+.game-btn{
+    margin: 20px auto;
+    width: 300px;
+    display: block;
+}
 .msg-board{
-    margin: 50px auto;
+    margin: 0 auto;
     background-color: darkgrey;
     border: 1px solid black;
     width: 300px;
