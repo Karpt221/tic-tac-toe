@@ -8,13 +8,28 @@
     display: grid;
     grid-template-columns: repeat(3, 100px);
     grid-template-rows: repeat(3, 100px);
+
+    & .cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid black;
+    }
 }
-.game-btn{
+
+.game-btn {
     margin: 20px auto;
     width: 300px;
     display: block;
 }
-.msg-board{
+
+.names-btn {
+    margin: 20px auto;
+    width: 300px;
+    display: block;
+}
+
+.msg-board {
     margin: 0 auto;
     background-color: darkgrey;
     border: 1px solid black;
@@ -24,13 +39,19 @@
     padding: 10px;
 }
 
-.cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid black;
+
+
+.blocked {
+    pointer-events: none;
 }
 
-.blocked{
-    pointer-events: none;
+.close-modal-btn {
+    justify-self: flex-end;
+    border: none;
+    background: none;
+    cursor: pointer;
+
+    & img {
+        width: 20px;
+    }
 }

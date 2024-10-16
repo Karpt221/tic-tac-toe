@@ -147,9 +147,23 @@ const GameView = (function () {
     const msgBoard = document.querySelector('.msg-board > p');
     const domCells = document.querySelectorAll('.cell');
     const gameBtn = document.querySelector('.game-btn');
+    const namesBtn = document.querySelector('.names-btn');
+    const closeModalBtn = document.querySelector('.close-modal-btn');
+    const namesDialog = document.querySelector(".change-names-modal");
+    const namesForm = document.querySelector(".change-names-form");
 
     disableCells();
+    namesBtn.addEventListener('click', () => {
+        namesDialog.showModal();
+    });
+    closeModalBtn.addEventListener('click', () => {
+        namesDialog.close();
+    });
 
+    namesDialog.addEventListener("close", () => {
+        document.querySelector('#player1-form').value = '';
+        document.querySelector('#player2-form').value = '';
+    });
     function idToCoord(id) {
         return id.split(':').map(Number)
     }
@@ -165,8 +179,16 @@ const GameView = (function () {
         }
     }
 
+    function disableNamesBtn() {
+        namesBtn.setAttribute('disabled', '');
+    }
+
+    function enableNamesBtn() {
+        namesBtn.removeAttribute('disabled');
+    }
+
     function disableGameBtn() {
-        gameBtn.setAttribute('disabled','');
+        gameBtn.setAttribute('disabled', '');
     }
 
     function enableGameBtn() {
@@ -174,15 +196,23 @@ const GameView = (function () {
     }
 
     function disableCells() {
-        domCells.forEach((cell)=> cell.classList.add('blocked'));
+        domCells.forEach((cell) => cell.classList.add('blocked'));
     }
 
     function enableleCells() {
-        domCells.forEach((cell)=> cell.classList.remove('blocked'));
+        domCells.forEach((cell) => cell.classList.remove('blocked'));
     }
 
     function updateMessage(newMessage) {
         msgBoard.textContent = newMessage;
+    }
+
+    function addSavePlayerNamesListener(game) {
+        document.addEventListener('submit', () => {
+            const players = game.getPlayers();
+            players[0].name = document.querySelector('#player1-form').value;
+            players[1].name = document.querySelector('#player2-form').value;
+        });
     }
 
     function addListenersToCells(playRound) {
@@ -194,17 +224,16 @@ const GameView = (function () {
     }
 
     function updateBtn() {
-        if(gameBtn.textContent === 'Start game'){
+        if (gameBtn.textContent === 'Start game') {
             gameBtn.textContent = 'Reset game';
         }
     }
 
     function addListenersToGameBtn(startGame) {
         gameBtn.addEventListener('click', () => {
-                startGame();
-            })
+            startGame();
+        })
     }
-
     return {
         renderBoardValues,
         updateMessage,
@@ -215,20 +244,25 @@ const GameView = (function () {
         updateBtn,
         disableGameBtn,
         enableGameBtn,
+        disableNamesBtn,
+        enableNamesBtn,
+        addSavePlayerNamesListener,
     };
 })();
 
 const GameController = (function (game, gameView) {
-    
+
+
     const startGame = function () {
         game.resetModel();
         gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
         gameView.renderBoardValues(game.getGameBoardObj().getBoard());
         gameView.enableleCells();
         gameView.disableGameBtn();
+        gameView.disableNamesBtn();
     }
 
-    
+
     const playRound = function (cellCoord) {
         let [x, y] = cellCoord;
 
@@ -238,26 +272,27 @@ const GameController = (function (game, gameView) {
         } else {
             gameView.renderBoardValues(game.getGameBoardObj().getBoard());
             game.checkWinnerExistence();
-            
+
             let gameStatus = game.getGameStatus();
-            if(gameStatus.winnerExist || gameStatus.isToe){
+            if (gameStatus.winnerExist || gameStatus.isToe) {
                 gameView.disableCells();
                 gameView.updateBtn();
                 gameView.enableGameBtn();
+                gameView.enableNamesBtn();
             }
             if (gameStatus.winnerExist) {
                 gameView.updateMessage('Winner is ' + gameStatus.winner.name);
-                
+
             } else if (gameStatus.isToe) {
                 gameView.updateMessage('It is Toe!');
-            }else{
+            } else {
                 game.switchPlayerTurn();
                 gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
             }
         }
     }
-
     gameView.addListenersToGameBtn(startGame);
     gameView.addListenersToCells(playRound);
+    gameView.addSavePlayerNamesListener(game);
 
 })(Game, GameView);
