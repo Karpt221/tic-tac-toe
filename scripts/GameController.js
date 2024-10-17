@@ -19,7 +19,6 @@ const GameBoard = (function () {
     };
 
     const getBoard = function () {
-        //return JSON.parse(JSON.stringify(gameBoard));
         return gameBoard;
     };
 
@@ -151,11 +150,8 @@ const GameView = (function () {
     const closeModalBtn = document.querySelector('.close-modal-btn');
     const namesDialog = document.querySelector(".change-names-modal");
     const namesForm = document.querySelector(".change-names-form");
-
     disableCells();
-    namesBtn.addEventListener('click', () => {
-        namesDialog.showModal();
-    });
+
     closeModalBtn.addEventListener('click', () => {
         namesDialog.close();
     });
@@ -164,6 +160,7 @@ const GameView = (function () {
         document.querySelector('#player1-form').value = '';
         document.querySelector('#player2-form').value = '';
     });
+
     function idToCoord(id) {
         return id.split(':').map(Number)
     }
@@ -207,15 +204,20 @@ const GameView = (function () {
         msgBoard.textContent = newMessage;
     }
 
-    function addSavePlayerNamesListener(game) {
-        document.addEventListener('submit', () => {
-            const players = game.getPlayers();
+    function transferPlayersToNamesListeners(players) {
+        namesForm.addEventListener('submit', () => {
             players[0].name = document.querySelector('#player1-form').value;
             players[1].name = document.querySelector('#player2-form').value;
         });
+
+        namesBtn.addEventListener('click', () => {
+            document.querySelector('#player1-form').value = players[0].name;
+            document.querySelector('#player2-form').value = players[1].name;
+            namesDialog.showModal();
+        });
     }
 
-    function addListenersToCells(playRound) {
+    function linkPlayRoundToCells(playRound) {
         domCells.forEach(
             (cell) => cell.addEventListener('click', (e) => {
                 playRound(idToCoord(e.target.id));
@@ -229,30 +231,29 @@ const GameView = (function () {
         }
     }
 
-    function addListenersToGameBtn(startGame) {
+    function linkStartGameToGameBtn(startGame) {
         gameBtn.addEventListener('click', () => {
             startGame();
         })
     }
+
     return {
         renderBoardValues,
         updateMessage,
-        addListenersToCells,
+        linkPlayRoundToCells,
         disableCells,
         enableleCells,
-        addListenersToGameBtn,
+        linkStartGameToGameBtn,
         updateBtn,
         disableGameBtn,
         enableGameBtn,
         disableNamesBtn,
         enableNamesBtn,
-        addSavePlayerNamesListener,
+        transferPlayersToNamesListeners,
     };
 })();
 
 const GameController = (function (game, gameView) {
-
-
     const startGame = function () {
         game.resetModel();
         gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
@@ -261,7 +262,6 @@ const GameController = (function (game, gameView) {
         gameView.disableGameBtn();
         gameView.disableNamesBtn();
     }
-
 
     const playRound = function (cellCoord) {
         let [x, y] = cellCoord;
@@ -291,8 +291,8 @@ const GameController = (function (game, gameView) {
             }
         }
     }
-    gameView.addListenersToGameBtn(startGame);
-    gameView.addListenersToCells(playRound);
-    gameView.addSavePlayerNamesListener(game);
+    gameView.linkStartGameToGameBtn(startGame);
+    gameView.linkPlayRoundToCells(playRound);
+    gameView.transferPlayersToNamesListeners(game.getPlayers());
 
 })(Game, GameView);
