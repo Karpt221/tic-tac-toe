@@ -1,26 +1,20 @@
 const GameBoard = (function () {
     let gameBoard = [];
-    const resetBoard = function () {
+    const resetBoard = () => {
         gameBoard = Array(3).fill().map(() => Array(3).fill(null));
     };
 
     resetBoard();
 
-    const getCellMark = function (x, y) {
-        return gameBoard[x][y];
-    };
-
-    const setCellMark = function (x, y, player) {
-        if (gameBoard[x][y] === 'X' || gameBoard[x][y] === 'O') {
-            return false;
-        }
+    const setCellMark = (x, y, player) => {
+        if (gameBoard[x][y]) return false;
         gameBoard[x][y] = player.mark;
         return true;
     };
 
-    const getBoard = function () {
-        return gameBoard;
-    };
+    const getCellMark = (x, y) => gameBoard[x][y];
+
+    const getBoard = () => gameBoard;
 
     return {
         getCellMark,
@@ -32,112 +26,58 @@ const GameBoard = (function () {
 
 const Game = (function (gameBoard) {
     const players = [
-        {
-            name: 'Player1',
-            mark: 'O'
-        },
-        {
-            name: 'Player2',
-            mark: 'X'
-        }
+        { name: 'Player1', mark: 'X' },
+        { name: 'Player2', mark: 'O' }
     ];
     let activePlayer = players[0];
 
-    const gameStatus = { winnerExist: false, isToe: false, winner: null };
+    const gameStatus = { winnerExist: false, isTie: false, winner: null };
 
     const resetModel = function () {
         gameBoard.resetBoard();
         activePlayer = players[0];
     }
 
-    const setGameStatus = function (winnerExist = false, isToe = false, winner = null) {
-        gameStatus.isToe = isToe;
-        gameStatus.winnerExist = winnerExist;
-        gameStatus.winner = winner;
-    }
-
-    const getGameStatus = function () {
-        return gameStatus;
-    }
-
-    const getGameBoardObj = function () {
-        return gameBoard;
-    }
-
-    const getPlayers = function () {
-        return players;
-    }
-
-    const getActivePlayer = function () {
-        return activePlayer;
-    }
+    const setGameStatus = (winnerExist = false, isTie = false, winner = null) => {
+        Object.assign(gameStatus, { winnerExist, isTie, winner });
+    };
 
     const switchPlayerTurn = function () {
         activePlayer = (activePlayer === players[0] ? players[1] : players[0]);
     }
 
-    const checkWinnerExistence = function () {
+    const checkLine = (a, b, c) => (a === b && b === c && a !== null) ? a : null;
+
+    const checkWinnerExistence = () => {
         const board = gameBoard.getBoard();
         let winnerMark = null;
-        let fullyFilledBoard = false;
 
-        // Check Rows
-        for (let row = 0; row < 3; row++) {
-            if (board[row][0] === board[row][1]
-                && board[row][1] === board[row][2]
-                && board[row][0] !== null) {
-                winnerMark = board[row][0];
-            }
+        // Check rows, columns
+        for (let i = 0; i < 3; i++) {
+            winnerMark = checkLine(board[i][0], board[i][1], board[i][2]) || checkLine(board[0][i], board[1][i], board[2][i]);
+            if (winnerMark) break;
         }
+        //Check diagonals
+        winnerMark = winnerMark || checkLine(board[0][0], board[1][1], board[2][2]) || checkLine(board[0][2], board[1][1], board[2][0]);
 
-        // Check Columns
-        for (let col = 0; col < 3; col++) {
-            if (board[0][col] === board[1][col]
-                && board[1][col] === board[2][col]
-                && board[0][col] !== null) {
-                winnerMark = board[0][col];
-            }
-        }
-
-        // Check Diagonals
-        if (board[0][0] === board[1][1]
-            && board[1][1] === board[2][2]
-            && board[0][0] !== null) {
-            winnerMark = board[0][0];
-        }
-
-        if (board[0][2] === board[1][1]
-            && board[1][1] === board[2][0]
-            && board[0][2] !== null) {
-            winnerMark = board[0][2];
-        }
-
-        if (winnerMark !== null) {
-            if (winnerMark === 'O') {
-                setGameStatus(true, false, players[0]);
-            } else {
-                setGameStatus(true, false, players[1]);
-            }
+        if (winnerMark) {
+            const winner = players.find(player => player.mark === winnerMark);
+            setGameStatus(true, false, winner);
+        } else if (board.flat().every(cell => cell !== null)) {
+            setGameStatus(false, true);
         } else {
-            fullyFilledBoard = board.every((row) => row.every((cell) => cell !== null));
-            if (fullyFilledBoard) {
-                setGameStatus(false, true);
-            } else {
-                setGameStatus(false, false);
-            }
+            setGameStatus(false, false);
         }
+    };
 
-
-
-    }
     return {
         checkWinnerExistence,
         switchPlayerTurn,
-        getGameStatus,
-        getActivePlayer,
-        getGameBoardObj,
-        getPlayers,
         resetModel,
+        getGameStatus: () => gameStatus,
+        getActivePlayer: () => activePlayer,
+        getGameBoardObj: () => gameBoard,
+        getPlayers: () => players,
     };
 
 })(GameBoard);
@@ -150,7 +90,6 @@ const GameView = (function () {
     const closeModalBtn = document.querySelector('.close-modal-btn');
     const namesDialog = document.querySelector(".change-names-modal");
     const namesForm = document.querySelector(".change-names-form");
-    disableCells();
 
     closeModalBtn.addEventListener('click', () => {
         namesDialog.close();
@@ -161,53 +100,55 @@ const GameView = (function () {
         document.querySelector('#player2-form').value = '';
     });
 
-    function idToCoord(id) {
-        return id.split(':').map(Number)
-    }
-
-    const renderBoardValues = function (gameBoard) {
-        for (const cell of domCells) {
-            let [x, y] = idToCoord(cell.id);
-            if (gameBoard[x][y] === null) {
-                cell.textContent = '';
-            } else {
-                cell.textContent = gameBoard[x][y];
-            }
-        }
-    }
-
-    function disableNamesBtn() {
-        namesBtn.setAttribute('disabled', '');
-    }
-
-    function enableNamesBtn() {
-        namesBtn.removeAttribute('disabled');
-    }
-
-    function disableGameBtn() {
-        gameBtn.setAttribute('disabled', '');
-    }
-
-    function enableGameBtn() {
-        gameBtn.removeAttribute('disabled');
-    }
-
-    function disableCells() {
-        domCells.forEach((cell) => cell.classList.add('blocked'));
-    }
-
-    function enableleCells() {
-        domCells.forEach((cell) => cell.classList.remove('blocked'));
+    const renderBoardValues = (gameBoard) => {
+        domCells.forEach(cell => {
+            const [x, y] = cell.id.split(':').map(Number);
+            const cellValue = gameBoard[x][y];
+            const incons = {
+                'X': '<img src="icons/cross.svg" alt="">',
+                'O': '<img src="icons/circle.svg" alt="">',
+                null: ''
+            };
+            cell.innerHTML = incons[cellValue];
+        });
     }
 
     function updateMessage(newMessage) {
         msgBoard.textContent = newMessage;
     }
 
+    const disableElement = (element) => {
+        if (element.tagName === 'DIV') {
+            element.classList.add('blocked');
+        } else { element.setAttribute('disabled', '') }
+    };
+    const enableElement = (element) => {
+        if (element.tagName === 'DIV') {
+            element.classList.remove('blocked');
+        } else { element.removeAttribute('disabled') }
+    }
+
+    const enableGameBtn = () => enableElement(gameBtn);
+    const disableGameBtn = () => disableElement(gameBtn);
+
+    const enableNamesBtn = () => enableElement(namesBtn);
+    const disableNamesBtn = () => disableElement(namesBtn);
+
+    const enableCells = () => domCells.forEach(cell => enableElement(cell));
+    const disableCells = () => domCells.forEach(cell => disableElement(cell));
+
+
     function transferPlayersToNamesListeners(players) {
-        namesForm.addEventListener('submit', () => {
-            players[0].name = document.querySelector('#player1-form').value;
-            players[1].name = document.querySelector('#player2-form').value;
+        namesForm.addEventListener('submit', (e) => {
+            const player1Name = document.querySelector('#player1-form').value;
+            const player2Name = document.querySelector('#player2-form').value;
+            if (player1Name === player2Name) {
+                e.preventDefault();
+                alert('Names must be unique');
+                return;
+            }
+            players[0].name = player1Name;
+            players[1].name = player2Name;
         });
 
         namesBtn.addEventListener('click', () => {
@@ -220,15 +161,9 @@ const GameView = (function () {
     function linkPlayRoundToCells(playRound) {
         domCells.forEach(
             (cell) => cell.addEventListener('click', (e) => {
-                playRound(idToCoord(e.target.id));
+                playRound(e.target.id.split(':').map(Number));
             })
         )
-    }
-
-    function updateBtn() {
-        if (gameBtn.textContent === 'Start game') {
-            gameBtn.textContent = 'Reset game';
-        }
     }
 
     function linkStartGameToGameBtn(startGame) {
@@ -237,12 +172,18 @@ const GameView = (function () {
         })
     }
 
+    function updateBtn() {
+        if (gameBtn.textContent === 'Start game') {
+            gameBtn.textContent = 'Reset game';
+        }
+    }
+
     return {
         renderBoardValues,
         updateMessage,
         linkPlayRoundToCells,
         disableCells,
-        enableleCells,
+        enableCells,
         linkStartGameToGameBtn,
         updateBtn,
         disableGameBtn,
@@ -258,39 +199,39 @@ const GameController = (function (game, gameView) {
         game.resetModel();
         gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
         gameView.renderBoardValues(game.getGameBoardObj().getBoard());
-        gameView.enableleCells();
+        gameView.enableCells();
         gameView.disableGameBtn();
         gameView.disableNamesBtn();
     }
 
     const playRound = function (cellCoord) {
-        let [x, y] = cellCoord;
-
-        let isSet = game.getGameBoardObj().setCellMark(x, y, game.getActivePlayer());
+        const [x, y] = cellCoord;
+        const isSet = game.getGameBoardObj().setCellMark(x, y, game.getActivePlayer());
         if (!isSet) {
-            gameView.updateMessage('Cell is not empty.')
+            gameView.updateMessage('Cell is not empty.');
+            return;
+        }
+
+        gameView.renderBoardValues(game.getGameBoardObj().getBoard());
+        game.checkWinnerExistence();
+
+        const { winnerExist, istie, winner } = game.getGameStatus();
+        if (winnerExist || istie) {
+            gameView.disableCells();
+            gameView.updateBtn();
+            gameView.enableGameBtn();
+            gameView.enableNamesBtn();
+        }
+        if (winnerExist) {
+            gameView.updateMessage('Winner is ' + winner.name);
+        } else if (istie) {
+            gameView.updateMessage('It is tie!');
         } else {
-            gameView.renderBoardValues(game.getGameBoardObj().getBoard());
-            game.checkWinnerExistence();
-
-            let gameStatus = game.getGameStatus();
-            if (gameStatus.winnerExist || gameStatus.isToe) {
-                gameView.disableCells();
-                gameView.updateBtn();
-                gameView.enableGameBtn();
-                gameView.enableNamesBtn();
-            }
-            if (gameStatus.winnerExist) {
-                gameView.updateMessage('Winner is ' + gameStatus.winner.name);
-
-            } else if (gameStatus.isToe) {
-                gameView.updateMessage('It is Toe!');
-            } else {
-                game.switchPlayerTurn();
-                gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
-            }
+            game.switchPlayerTurn();
+            gameView.updateMessage(`Now is ${game.getActivePlayer().name} turn!`);
         }
     }
+    gameView.disableCells();
     gameView.linkStartGameToGameBtn(startGame);
     gameView.linkPlayRoundToCells(playRound);
     gameView.transferPlayersToNamesListeners(game.getPlayers());
